@@ -3,8 +3,11 @@ import cors from "@koa/cors";
 import { koaBody } from "koa-body";
 import { publicRoutes } from "@app/routes";
 import db from "@app/database/database";
-import dotenv from 'dotenv';
+import dotenv from "dotenv";
 import Router from "@koa/router";
+import koaLogger from "koa-pino-logger";
+import { logger } from "@app/utils/logger";
+import { runMigrations } from "./database/runMigrations";
 
 dotenv.config();
 
@@ -12,9 +15,10 @@ async function start() {
   // Initialize database connection
   try {
     await db.start();
-    console.log("Database connection initialized");
+    await runMigrations()
+    logger.info("Database connection initialized");
   } catch (error) {
-    console.error("Failed to initialize database:", error);
+    logger.error("Failed to initialize database:", error);
     process.exit(1);
   }
 
@@ -40,6 +44,7 @@ async function start() {
 
   app.use(cors());
   app.use(koaBody());
+  app.use(koaLogger());
 
   app.use(publicRoutes.routes());
   app.use(publicRoutes.allowedMethods());
@@ -47,11 +52,11 @@ async function start() {
   app.use(healthRouter.allowedMethods());
 
   app.on("error", (err, ctx) => {
-    console.error("server error", err, ctx);
+    logger.error("server error", err, ctx);
   });
 
   const server = app.listen(process.env.PORT, () => {
-    console.info(`Server running in PORT ${process.env.PORT} 🚀`);
+    logger.info(`Server running in PORT ${process.env.PORT} 🚀`);
   });
 
   // Setup graceful shutdown
@@ -61,37 +66,37 @@ async function start() {
 function setupGracefulShutdown(server) {
   // Handle termination signals
   const gracefulShutdown = async (signal) => {
-    console.log(`${signal} received, shutting down gracefully...`);
-    
+    logger.info(`${signal} received, shutting down gracefully...`);
+
     // Close server first (stop accepting new connections)
     server.close(() => {
-      console.log('HTTP server closed');
+      logger.info("HTTP server closed");
     });
 
     try {
       // Close database connection
       await db.close();
-      console.log('Database connections closed');
+      logger.info("Database connections closed");
       process.exit(0);
     } catch (error) {
-      console.error('Error during shutdown:', error);
+      logger.error("Error during shutdown:", error);
       process.exit(1);
     }
   };
 
   // Listen for termination signals
-  process.on('SIGTERM', () => gracefulShutdown('SIGTERM'));
-  process.on('SIGINT', () => gracefulShutdown('SIGINT'));
-  
+  process.on("SIGTERM", () => gracefulShutdown("SIGTERM"));
+  process.on("SIGINT", () => gracefulShutdown("SIGINT"));
+
   // Handle uncaught exceptions
-  process.on('uncaughtException', (error) => {
-    console.error('Uncaught exception:', error);
-    gracefulShutdown('UNCAUGHT_EXCEPTION');
+  process.on("uncaughtException", (error) => {
+    logger.error("Uncaught exception:", error);
+    gracefulShutdown("UNCAUGHT_EXCEPTION");
   });
-  
-  process.on('unhandledRejection', (reason, promise) => {
-    console.error('Unhandled rejection at:', promise, 'reason:', reason);
-    gracefulShutdown('UNHANDLED_REJECTION');
+
+  process.on("unhandledRejection", (reason, promise) => {
+    logger.error("Unhandled rejection at:", promise, "reason:", reason);
+    gracefulShutdown("UNHANDLED_REJECTION");
   });
 }
 

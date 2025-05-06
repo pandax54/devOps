@@ -1,11 +1,5 @@
 # FROM --platform=linux/amd64 node:22-alpine AS build
-
-# ARG NODE_ENV=production
-
 FROM node:22-alpine AS build
-
-# ARG NODE_ENV
-# ENV NODE_ENV=${NODE_ENV}
 
 WORKDIR /usr/app
 
@@ -23,9 +17,6 @@ FROM node:22-alpine AS production
 
 WORKDIR /usr/app
 
-# ARG NODE_ENV
-# ENV NODE_ENV=${NODE_ENV}
-
 # Create a non-root user (Alpine syntax)
 RUN addgroup -g 1001 nodejs && \
     adduser -D -u 1001 -G nodejs nodeuser
@@ -35,8 +26,14 @@ COPY --from=build /usr/app/package*.json ./
 COPY --from=build /usr/app/dist ./dist
 COPY --from=build /usr/app/tsconfig.json ./tsconfig.json
 
+COPY --from=builder /app/entrypoint.sh ./
+COPY --from=builder /app/wait-for-it.sh ./
+RUN chmod +x entrypoint.sh wait-for-it.sh
+
+
 COPY --from=build /usr/app/.env ./.env
 
+# RUN npm install --production
 RUN npm ci --only=production && npm cache clean --force
 
 # Change ownership
@@ -49,6 +46,7 @@ EXPOSE 3000
 HEALTHCHECK --interval=30s --timeout=3s --start-period=15s --retries=3 \
   CMD wget -q --spider http://localhost:3000/health || exit 1
 
+# ENTRYPOINT ["./entrypoint.sh"]
 CMD ["npm", "run", "start"]
 
 

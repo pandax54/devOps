@@ -13,7 +13,7 @@ const env = (key: string, defaultValue?: string): string => {
   return envVal
 }
 
-const environment = env('NODE_ENV', 'development')
+const environment = env('NODE_ENV', 'development').toLowerCase()
 
 type Config = {
   environment: string;
@@ -21,12 +21,18 @@ type Config = {
     ssl: boolean;
     databaseUrl: string;
   };
+  logs: {
+    level: string
+  }
 };
 
 export const config: Config = {
   environment: environment,
   database: {
-    ssl: process.env.NODE_ENV === 'production' ? true : false,
+    ssl: environment === 'production' ? true : false,
     databaseUrl: env('DATABASE_URL', 'postgresql://postgres:password@localhost:5432/database'),
   },
+  logs: {
+    level: env('LOG_LEVEL', 'info')
+  }
 };

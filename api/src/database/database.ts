@@ -1,6 +1,8 @@
 import knex, { Knex } from "knex";
 import config from "@app/config/knexfile";
 import { config as appConfig } from "@app/config";
+import { logger } from "@app/utils/logger";
+
 
 let db: Knex | null = null;
 // const db = knex(config[appConfig.environment]);
@@ -11,7 +13,7 @@ let db: Knex | null = null;
 export const start = async (): Promise<void> => {
   try {
     if (db) {
-      console.warn("Database connection already established");
+      logger.warn("Database connection already established");
       return;
     }
 
@@ -20,11 +22,11 @@ export const start = async (): Promise<void> => {
 
     // Test connection
     await db.raw("SELECT 1");
-    console.info(
+    logger.info(
       `Database connection established in ${appConfig.environment} environment`
     );
   } catch (error: any) {
-    console.error("Failed to establish database connection:", error);
+    logger.error("Failed to establish database connection:", error);
     throw new Error(`Database initialization failed: ${error.message}`);
   }
 };
@@ -35,15 +37,15 @@ export const start = async (): Promise<void> => {
 export const close = async (): Promise<void> => {
   try {
     if (!db) {
-      console.log("No active database connection to close");
+      logger.info("No active database connection to close");
       return;
     }
 
     await db.destroy();
     db = null;
-    console.log("Database connection closed successfully");
+    logger.info("Database connection closed successfully");
   } catch (error) {
-    console.error("Error closing database connection:", error);
+    logger.error("Error closing database connection:", error);
     throw new Error(`Failed to close database connection: ${error.message}`);
   }
 };
@@ -53,7 +55,7 @@ export const checkDatabaseConnection = async (): Promise<boolean> => {
     await db.raw("SELECT 1");
     return true;
   } catch (error) {
-    console.error("Database connection error:", error);
+    logger.error("Database connection error:", error);
     return false;
   }
 };
@@ -84,7 +86,7 @@ export const withDatabase = async <T>(
   try {
     return await callback(dbInstance);
   } catch (error: any) {
-    console.error("Database operation failed:", error);
+    logger.error("Database operation failed:", error);
     throw error;
   }
 };

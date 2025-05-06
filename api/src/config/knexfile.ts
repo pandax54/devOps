@@ -1,11 +1,14 @@
 import type { Knex } from "knex";
-import { config as appConfig } from "../config/index";
+import { config as appConfig } from "./index";
 import path from 'path'
 
 // https://gist.github.com/NigelEarle/80150ff1c50031e59b872baf0e474977
 
-const migrationsDirectory = path.resolve(__dirname, '../database/migrations');
-// directory: path.join(__dirname, '../../database/migrations')
+// const migrationsDirectory = path.resolve(__dirname, '../database/migrations');
+
+// Use absolute paths for migrations and seeds
+const migrationsDir = path.join(__dirname, '../../src/database/migrations');
+const seedsDir = path.join(__dirname, '../../src/database/seeds');
 
 
 const config: { [key: string]: Knex.Config } = {
@@ -22,14 +25,13 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: "knex_migrations",
-      directory: migrationsDirectory,
+      directory: migrationsDir,
       extension: 'ts'
     },
     seeds: {
-      directory: '../database/seeds'
+      directory: seedsDir
     }
   },
-
   production: {
     client: "pg",
     connection: {
@@ -42,7 +44,7 @@ const config: { [key: string]: Knex.Config } = {
     },
     migrations: {
       tableName: "knex_migrations",
-      directory: migrationsDirectory
+      directory: migrationsDir
     },
   },
 };

@@ -55,7 +55,40 @@ if (require.main === module) {
 
 export { runMigrations };
 
-//
+// ========================
+
+// import path from 'path';
+// import dotenv from 'dotenv';
+// import knex from 'knex';
+
+// // Load environment variables
+// dotenv.config();
+
+// async function runMigrations() {
+//   // Simple connection config
+//   const db = knex({
+//     client: 'pg',
+//     connection: process.env.DATABASE_URL || 'postgres://postgres:password@localhost:5490/database',
+//     migrations: {
+//       directory: path.join(__dirname, './migrations'),
+//       extension: 'ts'
+//     }
+//   });
+
+//   try {
+//     console.log('Running migrations...');
+//     const result = await db.migrate.latest();
+//     console.log('Migration result:', result);
+//   } catch (error) {
+//     console.error('Migration failed:', error);
+//   } finally {
+//     await db.destroy();
+//   }
+// }
+
+// runMigrations();
+
+// ========================
 
 // src/scripts/create-migration.js
 
@@ -83,7 +116,7 @@ export { runMigrations };
 //   const timestamp = new Date().toISOString().replace(/[-:.]/g, '').split('T')[0];
 //   const fileName = `${timestamp}_${migrationName}.ts`;
 //   const filePath = path.join(migrationsDir, fileName);
-  
+
 //   // Create migration file template
 //   const migrationContent = `import { Knex } from "knex";
 
@@ -104,7 +137,7 @@ export { runMigrations };
 //   // Write migration file
 //   fs.writeFileSync(filePath, migrationContent);
 //   console.log(`Migration file created at: ${filePath}`);
-  
+
 // } catch (error) {
 //   console.error('Failed to create migration:', error);
 //   process.exit(1);

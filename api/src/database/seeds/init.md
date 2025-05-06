@@ -56,3 +56,51 @@ export async function down(knex: Knex): Promise<void> {
 // 1. Compile TypeScript to JavaScript
 // 2. Run migrations using the compiled JavaScript files:
 //    npm run migrate:latest:prod
+
+// ===============================================================
+
+import path from 'path';
+import fs from 'fs';
+
+// Get seed name from command line
+const seedName = process.argv[2];
+
+if (!seedName) {
+  console.error('Please provide a seed name');
+  console.log('Usage: npm run seed:make your_seed_name');
+  process.exit(1);
+}
+
+// Ensure seeds directory exists
+const seedsDir = path.resolve(__dirname, './seeds');
+if (!fs.existsSync(seedsDir)) {
+  fs.mkdirSync(seedsDir, { recursive: true });
+}
+
+try {
+  const fileName = `${seedName}.ts`;
+  const filePath = path.join(seedsDir, fileName);
+
+  // Create seed file template
+  const seedContent = `import { Knex } from "knex";
+
+export async function seed(knex: Knex): Promise<void> {
+  // Deletes ALL existing entries
+  await knex("${seedName}").del();
+  
+  // Inserts seed entries
+  await knex("${seedName}").insert([
+    { /* your data */ },
+    { /* your data */ },
+    { /* your data */ }
+  ]);
+}
+`;
+
+  // Write seed file
+  fs.writeFileSync(filePath, seedContent);
+  console.log(`Seed file created at: ${filePath}`);
+} catch (error) {
+  console.error('Failed to create seed:', error);
+  process.exit(1);
+}
