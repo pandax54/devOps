@@ -3,3 +3,5 @@
 **/.terraform/*
 *.tfvars
 node_modules
+.env
+dist
