@@ -1,0 +1,62 @@
+{
+  "name": "devops",
+  "version": "1.0.0",
+  "main": "server.js",
+  "engines": {
+    "node": "^22.15.0",
+    "npm": "^10.9.2"
+  },
+  "scripts": {
+    "start": "node --enable-source-maps --no-warnings --unhandled-rejections=strict ./dist/src/server.js",
+    "build": "rm -rf dist && tsc --project tsconfig.json && tsc-alias -p tsconfig.json",
+    "dev": "npx tsx watch src/server.ts",
+    "start:dev": "nodemon --exec 'tsx' --watch 'src/**/*.ts' --ext ts,json src/server.ts",
+    "migrate:make": "knex --knexfile src/config/knexfile.ts migrate:make",
+    "migrate:latest": "knex --knexfile src/config/knexfile.ts migrate:latest",
+    "migrate:rollback": "knex --knexfile src/config/knexfile.ts migrate:rollback",
+    "migrate:rollback:all": "knex --knexfile src/config/knexfile.ts migrate:rollback --all",
+    "migrate:refresh": "npm run migrate:rollback && npm run migrate:latest",
+    "migrate:reset": "knex --knexfile src/config/knexfile.ts migrate:rollback --all && npm run migrate:latest",
+    "migrate:list": "knex --knexfile src/config/knexfile.ts migrate:list",
+    "seed:make": "knex --knexfile src/config/knexfile.ts seed:make",
+    "seed:run": "knex --knexfile src/config/knexfile.ts seed:run",
+    "migrate:latest:prod": "knex --knexfile dist/config/knexfile.js migrate:latest",
+    "seed:run:prod": "knex --knexfile dist/config/knexfile.js seed:run"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/pandax54/devOps.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/pandax54/devOps/issues"
+  },
+  "homepage": "https://github.com/pandax54/devOps#readme",
+  "description": "",
+  "dependencies": {
+    "@koa/cors": "^5.0.0",
+    "@koa/router": "^13.1.0",
+    "@types/koa": "^2.15.0",
+    "dotenv": "^16.5.0",
+    "knex": "^3.1.0",
+    "koa": "^3.0.0",
+    "koa-body": "^6.0.1",
+    "node": "^22.15.0",
+    "objection": "^3.1.5",
+    "pg": "^8.15.6"
+  },
+  "devDependencies": {
+    "@types/koa__cors": "^5.0.0",
+    "@types/koa__router": "^12.0.4",
+    "@types/node": "^22.15.3",
+    "nodemon": "^3.1.10",
+    "ts-node": "^10.9.2",
+    "tsc-alias": "^1.8.15",
+    "tsx": "^4.19.4",
+    "typescript": "^5.8.3"
+  },
+  "volta": {
+    "node": "22.15.0"
+  }
+}

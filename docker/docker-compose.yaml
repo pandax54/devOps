@@ -1,0 +1,70 @@
+version: "3.8"
+
+services:
+  app:
+    build: 
+      context: .
+    # image: docker-studies-app
+    platform: linux/arm64
+    container_name: "docker-studies-app"
+    ports:
+      - "3018:3000"
+    volumes:
+      - ./src:/usr/app/src
+      - ./public:/usr/app/public
+      - node_modules:/usr/app/node_modules
+      - ./tsconfig.json:/usr/app/tsconfig.json
+    environment:
+      - PORT=3000
+      - NODE_ENV=development
+      - DATABASE_URL=postgresql://postgres:password@db:5432/database
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - redis
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/health"]
+      interval: 30s
+      timeout: 3s
+      retries: 3
+      start_period: 15s
+
+  db:
+    image: postgres:13-alpine
+    platform: linux/arm64
+    container_name: "docker-studies-postgres"
+    ports:
+      - "5490:5432"
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+      POSTGRES_DB: database
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    networks:
+      - app-network
+    restart: unless-stopped
+
+  redis:
+    image: redis:alpine
+    platform: linux/arm64  # Specify platform here too
+    container_name: "docker-studies-redis"
+    ports:
+      - "6479:6379"
+    networks:
+      - app-network
+    restart: unless-stopped
+
+volumes:
+  db_data:
+    driver: local
+  node_modules:
+    driver: local
+
+networks:
+  app-network:
+    driver: bridge
