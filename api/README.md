@@ -1,7 +1,5 @@
 https://efficient-sloth-d85.notion.site/Desafio-Configura-o-de-Ambiente-com-Docker-Compose-486107762a0042c99a3bf7d3ecc14e85
 
-https://www.tutorialspoint.com/koajs/koajs_response_object.htm
-
 # Create a new migration
 npm run migrate:make -- create_users_table
 
@@ -33,8 +31,6 @@ TODO-LIST
 
 - user routes - post, get, put, delete
 - S3 bucket and image upload
-- migrations in docker
-- fix docker and docker-compose file - migrations
 - add wait for it - docker
 - tests
 - github workflows - test and deploy

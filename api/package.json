@@ -23,7 +23,7 @@
     "seed:run": "knex --knexfile src/config/knexfile.ts seed:run",
     "migrate:latest:prod": "knex --knexfile dist/config/knexfile.js migrate:latest",
     "seed:run:prod": "knex --knexfile dist/config/knexfile.js seed:run",
-      "migrate:docker": "docker-compose exec app npx knex --knexfile src/config/knexfile.ts migrate:latest",
+    "migrate:docker": "docker-compose exec app npx knex --knexfile src/config/knexfile.ts migrate:latest",
     "migrate:make:docker": "docker-compose exec app npx knex --knexfile src/config/knexfile.ts migrate:make"
   },
   "repository": {
@@ -40,8 +40,10 @@
   "dependencies": {
     "@koa/cors": "^5.0.0",
     "@koa/router": "^13.1.0",
+    "@types/joi": "^17.2.2",
     "@types/koa": "^2.15.0",
     "dotenv": "^16.5.0",
+    "joi": "^17.13.3",
     "knex": "^3.1.0",
     "koa": "^3.0.0",
     "koa-body": "^6.0.1",
