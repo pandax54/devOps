@@ -15,9 +15,9 @@ const getPrivateKey = (): string => {
     return config.secret.privateKey.replace(/\\n/g, '\n')
   }
 
-  // Fall back to file
   try {
     const privateKeyPath = path.join(__dirname, '../../keys/private-key.pem')
+    console.log('privateKeyPath:', privateKeyPath)
     return fs.readFileSync(privateKeyPath, 'utf8')
   } catch (error) {
     logger.error('Failed to load private key:', error)
@@ -101,183 +101,26 @@ export const getBearerToken = (authorization?: string): string | null => {
   return hash
 }
 
-// === ACCESS TOKEN ===
-
-// export const createToken = async (payload: {
-//   userId: string;
-//   role: string;
-//   email: string;
-// }): Promise<string> => {
-//   try {
-//     // For ES256, use a private key for signing
-//     const privateKeyPem = getPrivateKey();
-//     const privateKey = await importPKCS8(privateKeyPem, 'ES256');
-
-//     return new SignJWT(payload)
-//       .setProtectedHeader({ alg: 'ES256' })
-//       .setIssuedAt()
-//       .setExpirationTime(config.secret.expirationTime || '1h')
-//       .setJti(crypto.randomUUID()) // Unique identifier for the token
-//       .sign(privateKey);
-//   } catch (error) {
-//     logger.error('Error creating access token:', error);
-//     throw new Error(`Failed to create access token: ${error.message}`);
-//   }
-// };
-
-// export const verifyToken = async (token: string) => {
-//   try {
-//     // For ES256, use a public key for verification
-//     const publicKeyPem = getPublicKey();
-//     const publicKey = await importSPKI(publicKeyPem, 'ES256');
-
-//     const { payload } = await jwtVerify(token, publicKey, {
-//       maxTokenAge: config.secret.maxTokenAge || '2h', // Add some leeway over the expiration
-//     });
-//     return payload;
-//   } catch (error) {
-//     if (error.code === 'ERR_JWT_EXPIRED') {
-//       throw new Error('Token has expired');
-//     } else {
-//       logger.error('Token verification failed:', error);
-//       throw new Error('Invalid token');
-//     }
-//   }
-// };
-
-// // === REFRESH TOKEN ===
-
-// // Refresh token creation - make it last longer but more securely stored
-// export const createRefreshToken = async (userId: string): Promise<string> => {
-//   try {
-//     // Use a different private key for refresh tokens
-//     const refreshPrivateKeyPem = getRefreshPrivateKey();
-//     const refreshPrivateKey = await importPKCS8(refreshPrivateKeyPem, 'ES256');
-
-//     return new SignJWT({
-//       userId,
-//       type: 'refresh', // Explicitly mark as refresh token
-//     })
-//       .setProtectedHeader({ alg: 'ES256' })
-//       .setIssuedAt()
-//       .setExpirationTime(process.env.REFRESH_TOKEN_EXPIRATION_TIME || '7d')
-//       .setJti(crypto.randomUUID())
-//       .sign(refreshPrivateKey);
-//   } catch (error) {
-//     logger.error('Error creating refresh token:', error);
-//     throw new Error(`Failed to create refresh token: ${error.message}`);
-//   }
-// };
-
-// // Refresh token verification
-// export const verifyRefreshToken = async (token: string) => {
-//   try {
-//     const refreshPublicKeyPem = getRefreshPublicKey();
-//     const refreshPublicKey = await importSPKI(refreshPublicKeyPem, 'ES256');
-
-//     const { payload } = await jwtVerify(token, refreshPublicKey);
-
-//     // Verify this is actually a refresh token
-//     if (payload.type !== 'refresh') {
-//       throw new Error('Invalid token type');
-//     }
-
-//     return payload;
-//   } catch (error) {
-//     logger.error('Refresh token verification failed:', error);
-//     throw new Error('Invalid refresh token');
-//   }
-// };
-
-// // Function to refresh an access token using a refresh token
-// export const refreshAccessToken = async (refreshToken: string) => {
-//   try {
-//     // Verify the refresh token
-//     const payload = await verifyRefreshToken(refreshToken);
-
-//     const userId = payload.userId as string;
-//     const user = await userRepository.getUserById(userId);
-
-//     if (!user) {
-//       throw new Error('User not found');
-//     }
-
-//     // Check if refresh token is in the whitelist/database
-//     const isValidRefreshToken = await tokenRefreshRepository.validateRefreshTokenInDb(
-//       userId,
-//       refreshToken
-//     );
-
-//     if (!isValidRefreshToken) {
-//       throw new Error('Refresh token has been revoked');
-//     }
-
-//     // Create a new access token
-//     return createToken({
-//       userId: user.id,
-//       role: user.role,
-//       email: user.email,
-//     });
-//   } catch (error) {
-//     logger.error('Failed to refresh token:', error);
-//     throw new Error(`Failed to refresh token: ${error.message}`);
-//   }
-// };
-
-// // Function to handle token rotation and detect token reuse
-// export const rotateRefreshToken = async (oldRefreshToken: string) => {
-//   try {
-//     // Verify the old refresh token
-//     const payload = await verifyRefreshToken(oldRefreshToken);
-//     const userId = payload.userId as string;
-
-//     // Check if token is valid in database
-//     const isValid = await tokenRefreshRepository.validateRefreshTokenInDb(
-//       userId,
-//       oldRefreshToken
-//     );
-
-//     if (!isValid) {
-//       // If token is not valid but passed verification, it might be a reuse attack
-//       logger.warn('Potential refresh token reuse detected', { userId, tokenJti: payload.jti });
-
-//       // Invalidate all refresh tokens for this user as a security measure
-//       await tokenRefreshRepository.revokeAllUserRefreshTokens(userId);
-//       throw new Error('Security alert: All sessions have been terminated');
-//     }
-
-//     // Create a new refresh token
-//     const newRefreshToken = await createRefreshToken(userId);
-
-//     // Invalidate the old token and store the new one
-//     await tokenRefreshRepository.rotateRefreshToken(userId, oldRefreshToken, newRefreshToken, new Date(Date.now() + 7 * 24 * 60 * 60 * 1000)); // Set new expiration time
-
-//     return newRefreshToken;
-//   } catch (error) {
-//     logger.error('Failed to rotate refresh token:', error);
-//     throw new Error(`Failed to rotate refresh token: ${error.message}`);
-//   }
-// };
-
-// // Function to explicitly revoke a refresh token
-// export const revokeRefreshToken = async (userId: string, refreshToken: string) => {
-//   try {
-//     await tokenRefreshRepository.revokeRefreshToken(userId, refreshToken);
-//     return true;
-//   } catch (error) {
-//     logger.error('Failed to revoke refresh token:', error);
-//     throw new Error(`Failed to revoke token: ${error.message}`);
-//   }
-// };
-
 export const createToken = async (payload: {
   userId: string
   role: string
   email: string
 }): Promise<string> => {
   try {
-    const privateKeyPem = config.secret.privateKey.replace(/\\n/g, '\n')
+    
+    // console.log('Private key:', config.secret.privateKey)
+    // const privateKeyPem = config.secret.privateKey.replace(/\\n/g, '\n')
+    // upload the key from file in keys folder
+    const privateKeyPem = getPrivateKey()
     const privateKey = await importPKCS8(privateKeyPem, 'ES256')
+
+    // Check if the key has the proper PEM format
+    const hasProperFormat =
+      privateKeyPem.startsWith('-----BEGIN PRIVATE KEY-----') &&
+      privateKeyPem.endsWith('-----END PRIVATE KEY-----')
+    console.log('Has proper PEM format:', hasProperFormat)
+    console.log('Private key imported successfully')
+    // =======
 
     return new SignJWT(payload)
       .setProtectedHeader({ alg: 'ES256' })
@@ -293,7 +136,8 @@ export const createToken = async (payload: {
 
 export const createRefreshToken = async (userId: string): Promise<string> => {
   try {
-    const privateKeyPem = config.secret.privateKey.replace(/\\n/g, '\n')
+    // const privateKeyPem = config.secret.privateKey.replace(/\\n/g, '\n')
+    const privateKeyPem = getPrivateKey()
     const privateKey = await importPKCS8(privateKeyPem, 'ES256')
 
     // Create a tokenId (jti)
@@ -302,7 +146,7 @@ export const createRefreshToken = async (userId: string): Promise<string> => {
     // Calculate expiration
     const expiresIn = process.env.REFRESH_TOKEN_EXPIRATION_TIME || '7d'
     const expiresInMs = expiresIn.endsWith('d')
-      ? parseInt(expiresIn) * 24 * 60 * 60 * 1000
+      ? parseInt(expiresIn.replace('d', '')) * 24 * 60 * 60 * 1000
       : 7 * 24 * 60 * 60 * 1000 // Default to 7 days
 
     const expiresAt = new Date(Date.now() + expiresInMs)
@@ -407,7 +251,7 @@ export const refreshAccessToken = async (refreshToken: string) => {
       .setExpirationTime(expiresIn)
       .setJti(newTokenId)
       // .sign(await importPKCS8(privateKeyPem, 'ES256'))
-      .sign(privateKey);
+      .sign(privateKey)
 
     // Update the database (revoke old, add new)
     await tokenRefreshRepository.rotateRefreshToken(

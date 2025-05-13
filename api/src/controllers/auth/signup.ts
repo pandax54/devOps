@@ -24,7 +24,11 @@ export const signup = async (ctx: AppContext) => {
       email: createUser.email,
     })
 
+    console.log('accessToken', accessToken)
+
     const refreshToken = await createRefreshToken(createUser.id)
+
+    console.log('refreshToken', refreshToken)
 
     // Parse the expiration time string (e.g., "7d") directly to milliseconds
     const expiresInMs = ms(config.secret.tokenExpirationTime as ms.StringValue)
@@ -53,6 +57,6 @@ export const signup = async (ctx: AppContext) => {
   } catch (error) {
     console.error('Error during signup:', error)
     ctx.status = 401
-    ctx.json({ error })
+    ctx.body = { error }
   }
 }

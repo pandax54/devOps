@@ -2,7 +2,6 @@ import BaseRepository from './BaseRepository'
 import RefreshToken from '../models/Refresh-token'
 import { importSPKI, jwtVerify } from 'jose'
 import { config } from '@app/config'
-import { Knex } from 'knex'
 import { logger } from '@app/utils/logger'
 
 class TokenRefreshRepository extends BaseRepository<RefreshToken> {
@@ -18,9 +17,8 @@ class TokenRefreshRepository extends BaseRepository<RefreshToken> {
     return RefreshToken.query().insert({
       userId,
       tokenId,
-      expiresAt,
+      expiresAt: expiresAt.toISOString(),
       revoked: false,
-      createdAt: new Date(),
     })
   }
 
@@ -161,7 +159,7 @@ class TokenRefreshRepository extends BaseRepository<RefreshToken> {
 
       if (token && token.revokedAt) {
         // Token exists, is revoked, and has a revocation timestamp
-        return { reused: true, revokedAt: token.revokedAt }
+        return { reused: true, revokedAt: token.revokedAt as Date }
       }
 
       return { reused: false }

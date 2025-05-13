@@ -28,10 +28,10 @@ type Config = {
     secretKey: string;
     expirationTime: string;
     algorithm: string;
-    publicKey: string;
-    privateKey: string;
-    refreshPublicKey: string;
-    refreshPrivateKey: string;
+    publicKey?: string;
+    privateKey?: string;
+    refreshPublicKey?: string;
+    refreshPrivateKey?: string;
     saltRounds: number;
     refreshTokenExpirationTime: string;
     tokenExpirationTime: string;
@@ -51,10 +51,10 @@ export const config: Config = {
     secretKey: env('JWT_SECRET', 'your-secret-key'),
     expirationTime: env('JWT_EXPIRATION_TIME', '1h'),
     algorithm: env('JWT_ALGORITHM', 'HS256'),
-    publicKey: env('JWT_PUBLIC_KEY', 'your-public-key'),
-    privateKey: env('JWT_PRIVATE_KEY', 'your-private-key'),
-    refreshPublicKey: env('REFRESH_PUBLIC_KEY', 'your-refresh-public-key'),
-    refreshPrivateKey: env('REFRESH_PRIVATE_KEY', 'your-refresh-private-key'),
+    publicKey:  process.env.JWT_PUBLIC_KEY || '',
+    privateKey: process.env.JWT_PRIVATE_KEY || '',
+    refreshPublicKey: process.env.REFRESH_PUBLIC_KEY || '',
+    refreshPrivateKey: process.env.REFRESH_PRIVATE_KEY || '',
     saltRounds: parseInt(env('BCRYPT_SALT_ROUNDS', '12')),
     refreshTokenExpirationTime: env('REFRESH_TOKEN_EXPIRATION_TIME', '7d'),
     tokenExpirationTime: env('TOKEN_EXPIRATION_TIME', '1h'),
