@@ -1,11 +1,10 @@
-import knex, { Knex } from "knex";
-import config from "@app/config/knexfile";
-import { config as appConfig } from "@app/config";
-import { logger } from "@app/utils/logger";
+import knex, { Knex } from 'knex'
+import { default as knexconfig } from '@app/config/knexfile'
+import { config as appConfig } from '@app/config'
+import { logger } from '@app/utils/logger'
+import { Model } from 'objection'
 
-
-let db: Knex | null = null;
-// const db = knex(config[appConfig.environment]);
+let db: Knex | null = null
 
 /**
  * Initialize database connection
@@ -13,23 +12,33 @@ let db: Knex | null = null;
 export const start = async (): Promise<void> => {
   try {
     if (db) {
-      logger.warn("Database connection already established");
-      return;
+      logger.warn('Database connection already established')
+      return
     }
 
-    // Create new connection
-    db = knex(config[appConfig.environment]);
+    if (!knexconfig.hasOwnProperty(appConfig.environment)) {
+      throw new Error(
+        `Your knexfile is missing section '${appConfig.environment}'`
+      )
+    }
+
+    const knexEnv = knexconfig[appConfig.environment]
+    db = knex(knexEnv)
+
+    Model.knex(db)
 
     // Test connection
-    await db.raw("SELECT 1");
+    await db.raw('SELECT 1 as test')
+
     logger.info(
       `Database connection established in ${appConfig.environment} environment`
-    );
+    )
+    
   } catch (error: any) {
-    logger.error("Failed to establish database connection:", error);
-    throw new Error(`Database initialization failed: ${error.message}`);
+    logger.error('Failed to establish database connection:', error)
+    throw new Error(`Database initialization failed: ${error.message}`)
   }
-};
+}
 
 /**
  * Close database connection gracefully
@@ -37,43 +46,43 @@ export const start = async (): Promise<void> => {
 export const close = async (): Promise<void> => {
   try {
     if (!db) {
-      logger.info("No active database connection to close");
-      return;
+      logger.info('No active database connection to close')
+      return
     }
 
-    await db.destroy();
-    db = null;
-    logger.info("Database connection closed successfully");
+    await db.destroy()
+    db = null
+    logger.info('Database connection closed successfully')
   } catch (error) {
-    logger.error("Error closing database connection:", error);
-    throw new Error(`Failed to close database connection: ${error.message}`);
+    logger.error('Error closing database connection:', error)
+    throw new Error(`Failed to close database connection: ${error.message}`)
   }
-};
+}
 
 export const checkDatabaseConnection = async (): Promise<boolean> => {
   try {
-    await db.raw("SELECT 1");
-    return true;
+    await db.raw('SELECT 1')
+    return true
   } catch (error) {
-    logger.error("Database connection error:", error);
-    return false;
+    logger.error('Database connection error:', error)
+    return false
   }
-};
+}
 
 /**
  * Get database instance (creates connection if needed)
  */
 export const getDatabase = async (): Promise<Knex> => {
   if (!db) {
-    await start();
+    await start()
   }
 
   if (!db) {
-    throw new Error("Failed to get database instance");
+    throw new Error('Failed to get database instance')
   }
 
-  return db;
-};
+  return db
+}
 
 /**
  * Execute query with automatic connection handling
@@ -82,14 +91,14 @@ export const getDatabase = async (): Promise<Knex> => {
 export const withDatabase = async <T>(
   callback: (dbInstance: Knex) => Promise<T>
 ): Promise<T> => {
-  const dbInstance = await getDatabase();
+  const dbInstance = await getDatabase()
   try {
-    return await callback(dbInstance);
+    return await callback(dbInstance)
   } catch (error: any) {
-    logger.error("Database operation failed:", error);
-    throw error;
+    logger.error('Database operation failed:', error)
+    throw error
   }
-};
+}
 
 // Export the database instance for direct use
 // but prefer using the getDatabase() or withDatabase() methods
@@ -100,4 +109,4 @@ export default {
   close,
   checkDatabaseConnection,
   db,
-};
+}

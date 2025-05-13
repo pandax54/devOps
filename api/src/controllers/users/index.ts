@@ -1,3 +1,4 @@
+import { userRepository } from '@app/database/repositories/userRepository'
 import { CustomContext } from '@app/types/koa'
 
 class UserController {
@@ -16,7 +17,17 @@ class UserController {
 
   async getUser(ctx) {
     // Logic to get a user
-    ctx.body = { message: 'Get user' }
+    const { email } = ctx.query
+    console.log('Get user by email:', email)
+    const user = await userRepository.findByEmail(email)
+    const actives = await userRepository.findActiveUsers()
+    console.log('User found:', user)
+    console.log('actives found:', actives)
+
+    ctx.body = {
+      message: 'Get user',
+      user: user,
+    }
   }
 
   async createUser(ctx) {

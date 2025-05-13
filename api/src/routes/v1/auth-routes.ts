@@ -1,35 +1,23 @@
-import { logger } from "@app/utils/logger";
-import Router from "@koa/router";
+import Router from '@koa/router'
+import authController from '@app/controllers/auth'
 
 const authRoutes = new Router({
-  prefix: "/api/v1",
-});
+  prefix: '/auth',
+})
 
-authRoutes.post("/signup", (ctx, next) => {
+authRoutes.post('/signup', authController.signup)
 
-  ctx.status = 200;
+authRoutes.post('/reset-password', authController.refreshToken)
+
+authRoutes.post('/login',  authController.login)
+
+authRoutes.post('/logout', (ctx, next) => {
+  ctx.status = 200
   ctx.body = {
-    message: "Hello World",
-  };
-});
+    message: 'Hello World',
+  }
+})
 
-authRoutes.post("/login", (ctx, next) => {
+authRoutes.post('/refresh', authController.refresh)
 
-  ctx.status = 200;
-  ctx.body = {
-    message: "Hello World",
-  };
-});
-
-authRoutes.post("/logout", (ctx, next) => {
-
-  ctx.status = 200;
-  ctx.body = {
-    message: "Hello World",
-  };
-});
-
-
-
-
-export default authRoutes;
+export default authRoutes

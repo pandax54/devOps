@@ -1,16 +1,17 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 import { Context } from 'koa'
+import User from '../src/database/models/User'
 // import { User } from '@app/database'
 
 declare global {
-  
   type JWTPayload = {
-    // email: string
+    email: string
     userId: string
+    role: string
   }
 
   type AppContext<B = any, Q = any, P = any> = Context & {
-    // user: User
+    user?: User
     valid: {
       body: B
       query: Q

@@ -1,5 +1,6 @@
-import { Model, QueryBuilder } from "objection";
-import { Knex } from "knex";
+import { Model, QueryBuilder, Transaction, PartialModelObject } from 'objection';
+import { Knex } from 'knex';
+import { logger } from '@app/utils/logger';
 
 export default class BaseRepository<T extends Model> {
   protected model: typeof Model;
@@ -8,86 +9,125 @@ export default class BaseRepository<T extends Model> {
     this.model = model;
   }
 
-  async findById(id: string, trx?: Knex.Transaction): Promise<T | undefined> {
-    return this.model.query(trx).findById(id).select("*") as unknown as Promise<
-      T | undefined
-    >;
+  /**
+   * Get the model's query builder, optionally with a transaction
+   */
+  protected getQuery(trx?: Transaction | Knex.Transaction): QueryBuilder<T, T[]> {
+    return (trx ? this.model.query(trx) : this.model.query()) as QueryBuilder<T, T[]>;
   }
 
-  // Find all records with optional filtering, pagination, and sorting
-  async findAll(
-    {
-      filters = {},
-      page = 1,
-      pageSize = 20,
-      orderBy = "created_at",
-      orderDirection = "desc",
-    }: {
-      filters?: Record<string, any>;
-      page?: number;
-      pageSize?: number;
-      orderBy?: string;
-      orderDirection?: "asc" | "desc";
-    } = {},
-    trx?: Knex.Transaction
-  ): Promise<{ data: T[]; total: number }> {
-    // Create base query
-    let query = this.model.query(trx) as QueryBuilder<T, T[]>;
+  /**
+   * Find a record by ID
+   */
+  async findById(id: string | number, trx?: Transaction | Knex.Transaction): Promise<T | undefined> {
+    return this.getQuery(trx).findById(id) as unknown as Promise<T | undefined>;
+  }
 
-    // Apply filters
-    if (Object.keys(filters).length > 0) {
-      query = query.where(filters);
+  /**
+   * Find all records
+   */
+  async findAll(trx?: Transaction | Knex.Transaction): Promise<T[]> {
+    return this.getQuery(trx) as unknown as Promise<T[]>;
+  }
+
+  /**
+   * Create a new record
+   */
+  async create(data: PartialModelObject<T>, trx?: Transaction | Knex.Transaction): Promise<T> {
+    return this.getQuery(trx).insert(data) as unknown as Promise<T>;
+  }
+
+  /**
+   * Create multiple records
+   */
+  async createMany(data: PartialModelObject<T>[], trx?: Transaction | Knex.Transaction): Promise<T[]> {
+    return this.getQuery(trx).insert(data) as unknown as Promise<T[]>;
+  }
+
+  /**
+   * Update a record by ID
+   */
+  async update(id: string | number, data: PartialModelObject<T>, trx?: Transaction | Knex.Transaction): Promise<T | undefined> {
+    return this.getQuery(trx).patchAndFetchById(id, data) as unknown as Promise<T | undefined>;
+  }
+
+  /**
+   * Delete a record by ID (soft delete if model has deletedAt)
+   */
+  async delete(id: string | number, trx?: Transaction | Knex.Transaction): Promise<number> {
+    // Check if model has deletedAt property for soft delete
+    const modelInstance = new (this.model as any)();
+    if ('deletedAt' in modelInstance) {
+      return this.getQuery(trx).patch({ deletedAt: new Date() } as unknown as PartialModelObject<T>).where('id', id);
+    } else {
+      return this.getQuery(trx).deleteById(id);
     }
+  }
 
-    // Get total count (before pagination)
-    const total = await query.clone().resultSize();
+  /**
+   * Get the query builder
+   */
+  query(trx?: Transaction | Knex.Transaction): QueryBuilder<T, T[]> {
+    return this.getQuery(trx);
+  }
 
-    // Apply pagination and sorting
-    // The Page<T> object from Objection.js includes a results property that contains your actual data. You need to adjust your code to handle this structure:
-    // query = query.orderBy(orderBy, orderDirection).page(page - 1, pageSize); -> Page<T>
-    // data: result.results, / Extract the actual array from the Page object
+  /**
+   * Run operations within a transaction
+   */
+  async transaction<R>(
+    callback: (trx: Transaction) => Promise<R>
+  ): Promise<R> {
+    return this.model.transaction(async (trx) => {
+      try {
+        const result = await callback(trx);
+        return result;
+      } catch (error) {
+        logger.error('Transaction failed:', error);
+        throw error;
+      }
+    });
+  }
 
-    query = query
-      .orderBy(orderBy, orderDirection)
-      .offset((page - 1) * pageSize)
-      .limit(pageSize);
+  /**
+   * Find records by a field value
+   */
+  async findBy(field: string, value: any, trx?: Transaction | Knex.Transaction): Promise<T[]> {
+    return this.getQuery(trx).where(field, value) as unknown as Promise<T[]>;
+  }
 
-    // Execute query
-    const result = await query;
+  /**
+   * Find one record by a field value
+   */
+  async findOneBy(field: string, value: any, trx?: Transaction | Knex.Transaction): Promise<T | undefined> {
+    return this.getQuery(trx).where(field, value).first() as unknown as Promise<T | undefined>;
+  }
 
+  /**
+   * Find records with pagination
+   */
+  async findWithPagination(
+    page: number = 1,
+    pageSize: number = 10,
+    trx?: Transaction | Knex.Transaction
+  ): Promise<{ data: T[]; total: number; page: number; pageSize: number; pageCount: number }> {
+    const query = this.getQuery(trx);
+    
+    // Get results with pagination
+    const result = await query.page(page - 1, pageSize);
+    
     return {
-      data: result,
-      total,
+      data: result.results as unknown as T[],
+      total: result.total,
+      page: page,
+      pageSize: pageSize,
+      pageCount: Math.ceil(result.total / pageSize)
     };
   }
 
-  // Create a new record
-  async create(data: Partial<T>, trx?: Knex.Transaction): Promise<T> {
-    return this.model.query(trx).insert(data) as unknown as Promise<T>;
-  }
-
-  // Update a record by id
-  async update(
-    id: string,
-    data: Partial<T>,
-    trx?: Knex.Transaction
-  ): Promise<T | undefined> {
-    const updated = await this.model.query(trx).updateAndFetchById(id, data);
-
-    return updated as T | undefined;
-  }
-
-  // Delete a record by id
-  async delete(id: string, trx?: Knex.Transaction): Promise<boolean> {
-    const deleted = await this.model.query(trx).deleteById(id);
-
-    return deleted > 0;
-  }
-
-  // Run a transaction
-  async transaction<TResult>(
-    callback: (trx: Knex.Transaction) => Promise<TResult>
-  ): Promise<TResult> {
-    return this.model.transaction(callback);
+  /**
+   * Get database instance to use raw queries if needed
+   */
+  getKnex(): Knex {
+    return this.model.knex();
   }
 }

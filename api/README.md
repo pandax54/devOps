@@ -5,6 +5,9 @@ npm run migrate:make -- create_users_table
 
 npm run migrate:make:docker -- create_users_table
 
+knex migrate:latest --env developmen
+npm run migrate:latest
+
 # List Docker networks
 docker network ls
 

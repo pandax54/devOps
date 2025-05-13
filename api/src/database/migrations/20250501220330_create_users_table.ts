@@ -23,9 +23,10 @@ export async function up(knex: Knex): Promise<void> {
 
   return createStandardTable(knex, "users", (table) => {
     table.string("username", 255).notNullable().unique();
-    table.string("email", 255).notNullable();
+    table.string("email", 255).notNullable().unique();
     table.string("first_name", 255).notNullable();
     table.string("last_name", 255);
+    table.string("role", 255).defaultTo("user");
     table.boolean("is_active").notNullable().defaultTo(true);
     table.string("password").notNullable();
   });

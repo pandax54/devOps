@@ -13,9 +13,13 @@ dotenv.config()
 async function start() {
   // Initialize database connection
   try {
+    logger.info('Starting database connection...')
     await db.start()
+    logger.info('Database connection initialized successfully')
+
+    logger.info('Running database migrations...')
     await runMigrations()
-    logger.info('Database connection initialized')
+    logger.info('Migrations completed successfully')
   } catch (error) {
     logger.error('Failed to initialize database:', error)
     process.exit(1)
